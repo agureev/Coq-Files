@@ -1,0 +1,35 @@
+From AG Require Export Induction.
+
+Check nat_to_bin.
+
+Module NatList.
+
+  Inductive natprod : Type :=
+  | pair : nat -> nat -> natprod.
+
+  Check (pair 3 5).
+
+  Definition p_1 (p : natprod) : nat :=
+    match p with
+    | pair x y => x
+    end.
+
+  Definition p_2 (p : natprod) : nat :=
+    match p with
+    | pair x y => y
+    end.
+
+  Compute (p_1 (pair 3 5)).
+
+  Notation "( x , y )" := (pair x y).
+
+  Definition swap_pair (p : natprod) : natprod :=
+    match p with
+    | (x, y) => (y, x)
+                  end.
+
+  Definition surjective_pairing : forall p : natprod, p = ( p_1 p, p_2 p).
+    intros [x y]. simpl. reflexivity.
+  Defined.
+
+  

@@ -1,0 +1,202 @@
+From AG Require Export Induction.
+
+Check nat_to_bin.
+
+
+
+  Inductive natprod : Type :=
+  | pair : nat -> nat -> natprod.
+
+  Check (pair 3 5).
+
+  Definition p_1 (p : natprod) : nat :=
+    match p with
+    | pair x y => x
+    end.
+
+  Definition p_2 (p : natprod) : nat :=
+    match p with
+    | pair x y => y
+    end.
+
+  Compute (p_1 (pair 3 5)).
+
+  Notation "( x , y )" := (pair x y).
+
+  Definition swap_pair (p : natprod) : natprod :=
+    match p with
+    | (x, y) => (y, x)
+                  end.
+
+  Definition surjective_pairing : forall p : natprod, p = ( p_1 p, p_2 p).
+    intros [x y]. simpl. reflexivity.
+  Defined.
+
+  Definition snd_fst_is_swap : forall (p : natprod), (p_2 p, p_1 p) = swap_pair p.
+    intros [x y]. simpl. reflexivity.
+    Defined.
+
+  Definition fst_swap_is_snd : forall (p : natprod),
+      p_1 (swap_pair p) = p_2 p.
+    intros [x y]. simpl. reflexivity.
+  Defined.
+
+  Inductive natlist : Type :=
+  | nil
+  | cons (n : nat) (list : natlist).
+
+Notation "x :: l" := (cons x l)
+                     (at level 60, right associativity).
+Notation "[ ]" := nil.
+Notation "[ x ; .. ; y ]" := (cons x .. (cons y nil) ..).
+
+Fixpoint repeat (n count : nat) : natlist :=
+  match count with
+  | O => nil
+  | S count' => n :: (repeat n count')
+  end.
+
+Fixpoint length (l:natlist) : nat :=
+  match l with
+  | nil => O
+  | h :: t => S (length t)
+  end.
+
+Fixpoint app (l1 l2 : natlist) : natlist :=
+  match l1 with
+  | nil => l2
+  | h :: t => h :: (app t l2)
+  end.
+
+Notation "x ++ y" := (app x y)
+                       (right associativity, at level 60).
+
+Definition hd (default : nat) (l : natlist) : nat :=
+  match l with
+  | nil => default
+  | h :: t => h
+  end.
+Definition tl (l : natlist) : natlist :=
+  match l with
+  | nil => nil
+  | h :: t => t
+  end.
+
+Fixpoint nonzeros (l:natlist) : natlist :=
+  match l with
+  | nil => nil
+  | h :: l => match h with
+              | 0 => (nonzeros l)
+              | S n => ([S n] ++ nonzeros l)
+              end
+  end.
+
+Example test_nonzeros:
+  nonzeros [0;1;0;2;3;0;0] = [1;2;3].
+simpl.  reflexivity.
+Defined.
+
+Definition true_to_app : bool -> (natlist -> (natlist  -> natlist)) :=
+  fun b : bool => match b with
+                  | true => app
+                  | false => (fun x => fun y => y)
+                  end.
+
+Fixpoint oddmembers (l:natlist) : natlist :=
+  match l with
+  | [ ] => [ ]
+  | (h :: t) => true_to_app (odd h) ([h]) (oddmembers (t))
+end.
+
+                  
+Example test_oddmembers:
+  oddmembers [0;1;0;2;3;0;0] = [1;3].
+simpl. reflexivity.
+
+Definition countoddmembers : natlist -> nat :=
+  fun l => length (oddmembers l).
+Defined.
+
+Example test_countoddmembers1:
+  countoddmembers [1;0;3;1;4;5] = 4.
+ reflexivity. Defined.
+Example test_countoddmembers2:
+  countoddmembers [0;2;4] = 0.
+  reflexivity. Defined.
+Example test_countoddmembers3:
+  countoddmembers nil = 0.
+reflexivity. Defined.
+
+
+(*Definition alternate : natlist -> natlist -> natlist.
+  intros l1 l2. induction l1, l2 as [| h1 t1 h2 t2].
+  - exact ([ ]).
+  - exact (h1 :: t1).
+  - exact (n :: l1).
+    - 
+Defined.
+
+Example test_alternate1:
+  alternate [1;2;3] [4;5;6] = [1;4;2;5;3;6].
+simpl. *)
+
+      
+Fixpoint alternate (l1 l2 : natlist) : natlist :=
+  match l1, l2 with
+  | [ ], [ ] => [ ]
+  | h1 :: t1, [ ] => h1 :: t1
+  | [ ], h2 :: t2 => h2 :: t2
+  | h1 :: t1, h2 :: t2 => h1 :: h2 :: (alternate t1 t2)
+
+  end.
+Example test_alternate1:
+  alternate [1;2;3] [4;5;6] = [1;4;2;5;3;6].
+simpl. reflexivity. Defined.
+
+Example test_alternate2:
+  alternate [1] [4;5;6] = [1;4;5;6].
+simpl. reflexivity. Defined. 
+Example test_alternate3:
+  alternate [1;2;3] [4] = [1;4;2;3].
+simpl. reflexivity. Defined.
+Example test_alternate4:
+  alternate [] [20;30] = [20;30].
+simpl. reflexivity. Defined.
+
+Definition bag := natlist.
+
+Check eqb.
+
+Definition true_to_succ : bool -> (nat -> nat) :=
+  fun b => match b with
+           | true => S
+           | false => (fun x => x)
+                        end.
+
+Fixpoint count (v : nat) (s : bag) : nat :=
+  match v with
+  | 0 => match s with
+         | [ ] => 0
+         | h :: t => match h with
+                     | 0 => S (count 0 t)
+                     | S n => count 0 t
+                     end
+                       end
+         | S n => match s with
+                  | [ ] => 0
+                  | h :: t => match h with
+                              | 0 => count (S n) t
+                              | S n' => true_to_succ (eqb n n') (count (S n) t)
+                              end
+                                end
+                 
+        
+           end.
+                               
+
+                                          
+Example test_count1: count 1 [1;2;3;1;4;1] = 3.
+simpl . reflexivity. Defined.
+Example test_count2: count 6 [1;2;3;1;4;1] = 0.
+simpl. reflexivity. Defined.
+
