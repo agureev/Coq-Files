@@ -98,6 +98,12 @@ Defined.
 
 Search bool.
 
+Inductive typeprod (A B : Type) : Type :=
+  | termpair : A -> B -> typeprod A B.
+
+Definition eq_check (A B : Type) (a1 a2 : A) (b1 b2 : B) (p : a1 = a2) (q : b1 = b2) : (termpair _ _ a1 b1) = (termpair _ _  a2 b2).
+induction p. induction q. reflexivity. Defined.
+
 Definition  tru _nil : nat -> natlist :=
   fun n => match n with
            | 0 => nil
@@ -109,3 +115,5 @@ Fixpoint oddmembers (l:natlist) : natlist :=
   | h :: t => match h with
               | 0 => (oddmembers t)
                        | S n => 
+
+                           
