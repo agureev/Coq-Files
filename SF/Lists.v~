@@ -2,7 +2,7 @@ From AG Require Export Induction.
 
 Check nat_to_bin.
 
-Module NatList.
+
 
   Inductive natprod : Type :=
   | pair : nat -> nat -> natprod.
@@ -32,4 +32,578 @@ Module NatList.
     intros [x y]. simpl. reflexivity.
   Defined.
 
+  Definition snd_fst_is_swap : forall (p : natprod), (p_2 p, p_1 p) = swap_pair p.
+    intros [x y]. simpl. reflexivity.
+    Defined.
+
+  Definition fst_swap_is_snd : forall (p : natprod),
+      p_1 (swap_pair p) = p_2 p.
+    intros [x y]. simpl. reflexivity.
+  Defined.
+
+  Inductive natlist : Type :=
+  | nil
+  | cons (n : nat) (list : natlist).
+
+Notation "x :: l" := (cons x l)
+                     (at level 60, right associativity).
+Notation "[ ]" := nil.
+Notation "[ x ; .. ; y ]" := (cons x .. (cons y nil) ..).
+
+Fixpoint repeat (n count : nat) : natlist :=
+  match count with
+  | O => nil
+  | S count' => n :: (repeat n count')
+  end.
+
+Fixpoint length (l:natlist) : nat :=
+  match l with
+  | nil => O
+  | h :: t => S (length t)
+  end.
+
+Fixpoint app (l1 l2 : natlist) : natlist :=
+  match l1 with
+  | nil => l2
+  | h :: t => h :: (app t l2)
+  end.
+
+Notation "x ++ y" := (app x y)
+                       (right associativity, at level 60).
+
+Definition hd (default : nat) (l : natlist) : nat :=
+  match l with
+  | nil => default
+  | h :: t => h
+  end.
+Definition tl (l : natlist) : natlist :=
+  match l with
+  | nil => nil
+  | h :: t => t
+  end.
+
+Fixpoint nonzeros (l:natlist) : natlist :=
+  match l with
+  | nil => nil
+  | h :: l => match h with
+              | 0 => (nonzeros l)
+              | S n => ([S n] ++ nonzeros l)
+              end
+  end.
+
+Example test_nonzeros:
+  nonzeros [0;1;0;2;3;0;0] = [1;2;3].
+simpl.  reflexivity.
+Defined.
+
+Definition true_to_app : bool -> (natlist -> (natlist  -> natlist)) :=
+  fun b : bool => match b with
+                  | true => app
+                  | false => (fun x => fun y => y)
+                  end.
+
+Fixpoint oddmembers (l:natlist) : natlist :=
+  match l with
+  | [ ] => [ ]
+  | (h :: t) => true_to_app (odd h) ([h]) (oddmembers (t))
+end.
+
+                  
+Example test_oddmembers:
+  oddmembers [0;1;0;2;3;0;0] = [1;3].
+simpl. reflexivity.
+
+Definition countoddmembers : natlist -> nat :=
+  fun l => length (oddmembers l).
+Defined.
+
+Example test_countoddmembers1:
+  countoddmembers [1;0;3;1;4;5] = 4.
+ reflexivity. Defined.
+Example test_countoddmembers2:
+  countoddmembers [0;2;4] = 0.
+  reflexivity. Defined.
+Example test_countoddmembers3:
+  countoddmembers nil = 0.
+reflexivity. Defined.
+
+
+(*Definition alternate : natlist -> natlist -> natlist.
+  intros l1 l2. induction l1, l2 as [| h1 t1 h2 t2].
+  - exact ([ ]).
+  - exact (h1 :: t1).
+  - exact (n :: l1).
+    - 
+Defined.
+
+Example test_alternate1:
+  alternate [1;2;3] [4;5;6] = [1;4;2;5;3;6].
+simpl. *)
+
+      
+Fixpoint alternate (l1 l2 : natlist) : natlist :=
+  match l1, l2 with
+  | [ ], [ ] => [ ]
+  | h1 :: t1, [ ] => h1 :: t1
+  | [ ], h2 :: t2 => h2 :: t2
+  | h1 :: t1, h2 :: t2 => h1 :: h2 :: (alternate t1 t2)
+
+  end.
+Example test_alternate1:
+  alternate [1;2;3] [4;5;6] = [1;4;2;5;3;6].
+simpl. reflexivity. Defined.
+
+Example test_alternate2:
+  alternate [1] [4;5;6] = [1;4;5;6].
+simpl. reflexivity. Defined. 
+Example test_alternate3:
+  alternate [1;2;3] [4] = [1;4;2;3].
+simpl. reflexivity. Defined.
+Example test_alternate4:
+  alternate [] [20;30] = [20;30].
+simpl. reflexivity. Defined.
+
+Definition bag := natlist.
+
+Check eqb.
+
+Definition true_to_succ : bool -> (nat -> nat) :=
+  fun b => match b with
+           | true => S
+           | false => (fun x => x)
+           end.
+
+
+Fixpoint count (v : nat) (s : bag) : nat :=
+  match v with
+  | 0 => match s with
+         | [ ] => 0
+         | h :: t => match h with
+                     | 0 => S (count 0 t)
+                     | S n => count 0 t
+                     end
+                       end
+         | S n => match s with
+                  | [ ] => 0
+                  | h :: t => match h with
+                              | 0 => count (S n) t
+                              | S n' => (fun x : bool => match x with
+                                                         |true => S
+                                                         |false => (fun x => x)
+                                                         end)
+                                                           (eqb n n') (count (S n) t)
+                              end
+                                end
+                 
+        
+           end.
+                  
+
+Fixpoint count' (v : nat) (s : bag) : nat :=
+  match v with
+  | 0 => match s with
+         | [ ] => 0
+         | h :: t => match h with
+                     | 0 => S (count 0 t)
+                     | S n => count 0 t
+                     end
+                       end
+         | S n => match s with
+                  | [ ] => 0
+                  | h :: t => match h with
+                              | 0 => count (S n) t
+                              | S n' => true_to_succ (eqb n n') (count (S n) t)
+                              end
+                                end
+                 
+        
+           end.
+                               
+
+                                          
+Example test_count1: count 1 [1;2;3;1;4;1] = 3.
+simpl . reflexivity. Defined.
+Example test_count2: count 6 [1;2;3;1;4;1] = 0.
+simpl. reflexivity. Defined.
+
+Definition sum : bag -> bag -> bag :=
+  fun b => fun v => app b v. 
+
+Example test_sum1: count 1 (sum [1;2;3] [1;4;1]) = 3.
+simpl. reflexivity.
+
+Definition add (v : nat) (s : bag) : bag :=
+  app [v] s.
+Defined.
+
+
+Example test_add1: count 1 (add 1 [1;4;1]) = 3.
+simpl. reflexivity. Defined.
+Example test_add2: count 5 (add 1 [1;4;1]) = 0.
+simpl. reflexivity. Defined.
+
+Search bool.
+
+Definition member (v : nat) (s : bag) : bool :=
+  negb (0 =? count v s).
+
+Example test_member1: member 1 [1;4;1] = true.
+simpl. reflexivity. Defined.
+
+Example test_member2: member 2 [1;4;1] = false.
+simpl. reflexivity. Defined.
+
+Fixpoint remove_all (v : nat) (s : bag) : bag :=
+  match v, s  with
+  | 0, [ ] => [ ]
+  | S n, [ ] => [ ]
+  | 0, h :: t => match h with
+                 | 0 => (remove_all 0 t)
+                 | S m => (S m :: (remove_all 0 t))
+                             end
+                           
+  | S n, h :: t => match h with
+                  | 0 => S n :: (remove_all (S n) t)
+                  | S m => ( fun x : bool => fun  y : nat  => fun  t : bag  => match x with
+                                                                               | true => y :: t
+                                                                               | false => t
+                                                                               end ) (negb (eqb n m)) (S m) (remove_all (S n) t)
+                   end
+                     end.
+
+Definition true_to_cons : bool -> nat -> bag -> bag :=
+   fun x : bool => fun  y : nat  => fun  t : bag  => match x with
+                                                     | true => y :: t
+                                                     | false => t
+                                                                               end.
+
+
+
+                    
+Example test_remove_all1: count 5 (remove_all 5 [2;1;5;4;1]) = 0.
+reflexivity. Defined.
+Example test_remove_all2: count 5 (remove_all 5 [2;1;4;1]) = 0.
+reflexivity. Defined.
+Example test_remove_all3: count 4 (remove_all 5 [2;1;4;5;1;4]) = 2.
+reflexivity. Defined.
+Example test_remove_all4: count 5 (remove_all 5 [2;1;5;4;5;1;4;5;1;4]) = 0.
+reflexivity. Defined.
+
+Fixpoint remove_one   (v : nat) (s : bag) : bag :=
+  match v, s with
+  | 0, [ ] => [ ]
+  | S n, [ ] => [ ]              
+           | 0, h :: t => match h with
+                            |0 => t
+                            |S n => S n :: (remove_one 0 t)
+                          end
+           | S n, h :: t => match h with
+                            |0 => 0 :: (remove_one (S n) t)
+                            | S m => (fun x : bool => fun t q : bag =>
+                                        match x with
+                                        | true => t
+                                        | false => q
+                                        end
+                                     ) (andb (eqb n m) (negb (member (S n) t)))  t (h :: (remove_one (S n) t))
+                            end
+  end.
+
+Fixpoint  remove_one_alt (v : nat) (s : bag) : bag :=
+    match v, s with
+  | _, [ ] => [ ]              
+  | 0, h :: t => match h with
+                            |0 => t
+                            |S n => S n :: (remove_one_alt 0 t)
+                          end
+  | S n, h :: t => (fun x : bool => fun t q : bag =>
+                                        match x with
+                                        | true => t
+                                        | false => q
+                                        end
+                                     ) (andb (eqb (S n) h) (negb (member (S n) t)))  t (h :: (remove_one_alt (S n) t))
+                           
+  end.
+
+Example test_remove_one1:
+  count 5 (remove_one 5 [2;1;5;4;1]) = 0.
+reflexivity. Defined. 
+Example test_remove_one2:
+  count 5 (remove_one 5 [2;1;4;1]) = 0.
+reflexivity. Defined. 
+Example test_remove_one3:
+  count 4 (remove_one 5 [2;1;4;5;1;4]) = 2.
+simpl. reflexivity. Defined. 
+Example test_remove_one4:
+  count 5 (remove_one 5 [2;1;5;4;5;1;4]) = 1.
+reflexivity. Defined.
+
+Definition self_eq : forall (n : nat), (n =? n) = true.
+  intro n. induction n.
+  - simpl. reflexivity.
+    - simpl. apply IHn.
+Defined.
+
+Definition add_inc_count (n : nat) (t : natlist) : count n (n :: t) = S (count n t).
+  induction n.
+  - simpl. reflexivity.
+  - simpl. rewrite (self_eq n). reflexivity.
+Defined.
+
+Definition app_nil_r : forall l : natlist, l ++ [] = l.
+  intros l. induction l.
+  - reflexivity.
+  - simpl. rewrite IHl.
+    reflexivity. Defined.
+
+Fixpoint rev (l:natlist) : natlist :=
+  match l with
+  | nil => nil
+  | h :: t => rev t ++ [h]
+  end.
+
+Definition app_assoc : forall  l1 l2 l3 : natlist,
+  (l1 ++ l2) ++ l3 = l1 ++ (l2 ++ l3).
+  intros l1 l2 l3. induction l1 as [| n l1' IHl1'].
+  - (* l1 = nil *)
+    reflexivity.
+  - (* l1 = cons n l1' *)
+    simpl. rewrite -> IHl1'. reflexivity. Defined.
+
+Definition rev_app_distr : forall l1 l2 : natlist,
+    rev (l1 ++ l2) = rev l2 ++ rev l1.
+  intros l1 l2. induction l1.
+  - simpl. rewrite (app_nil_r (rev l2)). reflexivity.
+  - simpl. induction l2.
+    + simpl. rewrite (app_nil_r (l1)). reflexivity.
+    + simpl. rewrite IHl1. simpl. apply app_assoc. Defined.
+
+Definition rev_involutive : forall l : natlist, rev (rev l) = l.
+  induction l.
+  - simpl. reflexivity.
+  - simpl.  rewrite rev_app_distr. rewrite IHl. simpl. reflexivity.
+Defined.
+
+Definition app_assoc4 : forall l1 l2 l3 l4 : natlist,
+    l1 ++ (l2 ++ (l3 ++ l4)) = ((l1 ++ l2) ++ l3) ++ l4.
+  intros l1 l2 l3 l4. rewrite app_assoc. rewrite app_assoc. reflexivity.
+Defined.
+
+Definition nonzeros_app : forall l1 l2 : natlist,
+    nonzeros (l1 ++ l2) = (nonzeros l1) ++ (nonzeros l2).
+  intros l1 l2.
+  induction l1.
+  - simpl. reflexivity.
+  - induction n.
+    + simpl. apply IHl1.
+    + simpl. rewrite IHl1. reflexivity.
+Defined.
+
+Fixpoint eqblist (l1 l2 : natlist) : bool :=
+  match l1, l2 with
+  | [ ], [ ] => true
+  | [ ], h2 :: t2 => false
+  | h1 :: t1, [ ] => false
+  | h1 :: t1, h2 :: t2 => andb (h1 =? h2) (eqblist t1 t2)
+  end.
+
+Example test_eqblist1 :
+  (eqblist nil nil = true).
+reflexivity. Defined.
+Example test_eqblist2 :
+  eqblist [1;2;3] [1;2;3] = true.
+reflexivity. Defined.
+Example test_eqblist3 :
+  eqblist [1;2;3] [1;2;4] = false.
+reflexivity. Defined.
+
+Definition eqblist_refl (l: natlist) : true = eqblist l l.
+  induction l.
+  - reflexivity.
+  - simpl. rewrite self_eq. rewrite  <- IHl. reflexivity. Defined.
+
+Definition singleton_count (n : nat) : count n [n] = 1.
+  induction n.
+  -simpl. reflexivity.
+- simpl. rewrite self_eq.
+  reflexivity.
+Defined.
+
+Definition succ_geq_1 (n : nat) : leb 1 (S n) = true.
+induction n.
+- reflexivity.
+- simpl. reflexivity.
+Defined.
+
+
+Definition count_member_nonzero (s : bag) (n : nat) :  1 <=? (count n (n :: s)) = true.
+  induction s.
+  - rewrite singleton_count.  simpl. reflexivity.
+  - rewrite add_inc_count.  simpl. reflexivity.    
+Defined.
+
+Definition leb_n_Sn (n : nat) : n <=? (S n) = true.
+  induction n.
+  - simpl. reflexivity.
+  - simpl. apply IHn.
+Defined.
+
+Definition empty_count (n : nat) : count n ([ ]) = 0.
+  simpl. induction n. - reflexivity. - reflexivity. Defined.
+
+Definition remove_empty (n : nat) : remove_one n ([ ]) = [ ].
+  induction n. reflexivity. reflexivity. Defined.
+
+Definition self_leq (n : nat) : (n <=? n) = true.
+  induction n. simpl. reflexivity. simpl. apply IHn. Defined.
+
+Inductive empty : Type := .
+Search (_<?_).
+Inductive unit : Type :=
+  | point. 
+                      
+
+Definition transport {A : Type} (P : A -> Type) {x y : A} ( p : x = y) : P x -> P y.
+  induction p. apply id. Defined.
+
+Definition constr_contr_fun_nat : nat -> Type.
+  intro n. induction n.
+  exact unit. exact empty.
+Defined.
+
+Definition zero_leq_nat (n : nat) : 0 <=? n = true.
+  induction n.
+  - rewrite self_leq. reflexivity.
+  - induction n.
+    + simpl. reflexivity.
+      + simpl. reflexivity.
+Defined.
+      
+    
+
+Definition inverse_path {A : Type} {x y: A} (p : x = y) : y = x.
+  induction p. reflexivity. Defined.
+
+Definition constr_contr_fun_bool : bool -> Type :=
+  fun x => match x with
+             |true => unit
+                       |false => empty
+                                  end.
+
+Definition true_is_not_false (p : true = false): empty.
+apply (transport constr_contr_fun_bool p).
+exact point. Defined.
+
+Definition plus_one_is_succ_l (n : nat) : 1 + n = S n.
+  simpl. reflexivity. Defined.
+
+Notation " x < y " := (x <? y = true).
+Notation " x <= y" := (x <=? y = true).
+
+
+Search (_ <=? _).
+
+Definition succ_leq_one (x : nat) : S x <= 1 -> x <= 1.
+induction x. - simpl. exact (fun x => x). - intro p. simpl. simpl in p. assert empty. + apply true_is_not_false. apply inverse_path. exact p. + induction H. Defined.
+
+Definition nat_less_than_0_then_it_is_zero (x : nat) : x <= 0 -> x = 0.
+  intro p. induction x. - reflexivity. - simpl in p. assert empty. apply true_is_not_false. + apply inverse_path. exact p. + induction H. Defined.
+
+Definition  nat_less_than_0_then_it_is_zero_bool (x : nat) : x <= 0 -> x =? 0 = true.
+  intro p. induction x. - reflexivity. - simpl in p. assert empty. apply true_is_not_false. + apply inverse_path. exact p. + induction H. Defined.
+
+Definition nkdhahj (x y : nat) (p : x <= y) : orb (x <? y) (x =? y) = true. 
+ induction x. - simpl. induction y. + simpl. reflexivity. + simpl. reflexivity. -  induction y. + simpl in p. simpl. assert empty. ++ apply true_is_not_false. exact (inverse_path p). ++ induction H. + simpl. induction y. ++ simpl. simpl in p. simpl in IHy. simpl in IHx. apply nat_less_than_0_then_it_is_zero_bool. apply p. ++ simpl in p. Abort.
+
+Definition add_help_leq (n m : nat) : n <=? m = true -> n <=? S m = true.
+  induction m. - induction n. simpl. + exact (fun x => x).  + simpl. intro x. assert empty. ++ apply true_is_not_false. exact (inverse_path x). ++ induction H. - simpl. intro y. 
+        simpl. induction n. + Search 0. apply zero_leq_nat. + simpl. simpl in y. simpl in IHm. unfold leb in y. Abort.
+
+(* Definition asckja (n m : nat) : S n <=? m = true -> n <=? m = true.
+  intro p. induction n. - simpl. reflexivity. -
   
+  - simpl in p. assert empty. + apply true_is_not_false. exact (inverse_path p). + induction H. - induction n. + simpl. reflexivity. + rewrite <- p.  simpl in p.
+Definition add_leb_l (n m p: nat) : n <=? m = true -> (n <=? p + m = true).
+  intro q. induction n. apply zero_leq_nat.
+  - induction p.
+    + Search 0. rewrite plus_O_n. exact q.
+      + Search (_ <=? _). simpl. 
+                                                                                                                                                                                        
+ Definition leb_trans (x y z : nat) : x <=? y = true -> y <=? z = true -> x <=? z = true.
+ intros p q. induction x, y, z.
+- rewrite self_leq. reflexivity.
+- assumption.
+- rewrite self_leq. reflexivity.
+-  simpl. reflexivity.
+-  simpl. simpl in p. exact p.
+-  simpl. simpl in p. assert empty. + apply true_is_not_false. exact (inverse_path p).
+                                      + induction H.
+- simpl in q. assert empty. + apply true_is_not_false. exact (inverse_path q).
++ induction H.
+- assert (forall (n m : nat), S n <=? m = true -> n <=? m = true). 
++ intros n m. induction m. ++ simpl. intros t. assert empty. +++ apply true_is_not_false. exact (inverse_path t).
+                                                         +++  induction H.
+                                                              ++ simpl. intro o. induction n.
++++ simpl. reflexivity.
++++ Search plus. simpl. Abort. 
+ 
+                                                              
+Definition leq_both (x y : nat) : x <=? y = true -> y <=? x = true -> x = y.
+  intros p q. induction x, y.
+  - reflexivity.
+  - induction p. unfold leb in q. assert empty. + apply true_is_not_false. exact (inverse_path q).
+      + induction H.
+        - simpl in p. assert empty. + apply true_is_not_false. exact (inverse_path p).
+                  + induction H.
+                    - simpl in p. simpl in q. simpl in IHx. Search leb. Abort. *)
+
+Definition one_is_not_zero  : (0 = 1) -> empty.
+ intro p. apply (transport constr_contr_fun_nat p). exact point. Defined.
+
+
+Definition leq_zero_then_zero ( m : nat) : m <=? 0  = true -> m = 0.
+  intro p. induction m. - reflexivity. -  simpl in p. assert empty. apply true_is_not_false.  apply inverse_path. exact p. induction H. Defined.
+
+                                                     
+
+Definition succ_eq (n : nat) (p : 1 = S n) : n = 0.
+  induction n.
+  - reflexivity.
+  - simpl in p. Abort.
+
+
+    
+Definition one_count_singleton : forall (n : nat), count n [ n ] = 1.
+intro n. induction n. - reflexivity. - simpl. unfold eqb. Abort.
+
+
+Definition equality_from_counts (n n0 : nat) (s : natlist) : (count (S n) (remove_one (S n) s) <=? count (S n) s) = true
+  ->  (count (S n) (remove_one (S n) (n0 :: s)) <=? count (S n) (n0 :: s)) = true -> n = n0.
+
+  induction s.
+  - intros x y.
+    induction n, n0.
+    + reflexivity.
+    + rewrite empty_count in x. Abort.
+
+
+Definition remove_does_not_increase_count : forall (s : bag) (n : nat), (count n (remove_one_alt n s)) <=? count n s = true.
+  intros s n. induction s. - rewrite empty_count. assert (remove_one_alt n [ ] = [ ]). + simpl. induction n. reflexivity. reflexivity.
+                                                        + rewrite H. rewrite empty_count. simpl. reflexivity.
+  - induction n, n0.
+    + simpl. apply leb_n_Sn.
+    + simpl. assumption.
+    + simpl. assumption. Abort.
+     
+
+
+
+      
+
+Definition remove_does_not_increase_count : forall (s : bag) (n : nat), (count n (remove_one n s)) <=? count n s = true.
+  intros s n. induction s. - rewrite empty_count.  assert (remove_one n [ ] = [ ]). + simpl. induction n. reflexivity. reflexivity.
+                                                        + rewrite H. rewrite empty_count. simpl. reflexivity.
+  - induction n, n0.
+    + simpl. apply leb_n_Sn.
+    + simpl. assumption.
+    + simpl. assumption.
+    + simpl.
